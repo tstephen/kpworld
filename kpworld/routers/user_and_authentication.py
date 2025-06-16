@@ -29,6 +29,11 @@ SECRET_KEY = "your-secret-key"  # In production, use secure environment variable
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+def get_token(authorization: Optional[str] = None):
+    if not authorization or not authorization.startswith("Token "):
+        return None
+    return authorization.replace("Token ", "")
+
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
@@ -60,11 +65,6 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(get_tok
     if user is None:
         raise credentials_exception
     return user
-
-def get_token(authorization: Optional[str] = None):
-    if not authorization or not authorization.startswith("Token "):
-        return None
-    return authorization.replace("Token ", "")
 
 @router.get(
     '/user',

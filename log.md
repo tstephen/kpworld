@@ -32,3 +32,17 @@
    - I also noticed that the Real World `openapi.yaml` only contained the reference url so I added the local development server.
    - After that, I was able to create a new user (whilst unauthenticated, but ok, server initialisation is tricky).
      But not able to login with this user--because CORS not set up.
+   - Prompted to setup CORS
+
+     > Before implementing more routers we need to set up cors support. I have updated the copilot-instructions accordingly
+
+     I had to set Origin to permit Swagger UI
+     It still didn't work so I asked:
+
+     > Cors requests to /api/users/login from Origin http://127.0.0.1:8000 are rejected why would this be?
+
+     > 1. Fix parsing of "*" in CORS_METHODS and CORS_HEADERS
+     > 2. Mount all routers under a separate FastAPI app with /api prefix
+     > 3. Remove servers config since we're handling the /api prefix properly now
+
+     1 & 3 were unnecessary, and IMO undesirable.

@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import os
 
 from .routers import (
     articles,
@@ -15,6 +17,11 @@ from .routers import (
     user_and_authentication,
 )
 
+# CORS Configuration from environment variables
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8000").split(",")
+CORS_METHODS = os.getenv("CORS_METHODS", "GET,POST,PUT,DELETE").split(",")
+CORS_HEADERS = os.getenv("CORS_HEADERS", "Authorization,Content-Type").split(",")
+
 app = FastAPI(
     title='RealWorld Conduit API',
     description='Conduit API documentation',
@@ -24,13 +31,25 @@ app = FastAPI(
     servers=[{'url': 'https://api.realworld.io/api'}],
 )
 
-app.include_router(articles.router)
-app.include_router(comments.router)
-app.include_router(favorites.router)
-app.include_router(profile.router)
-app.include_router(tags.router)
-app.include_router(user_and_authentication.router)
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=CORS_METHODS,
+    allow_headers=CORS_HEADERS,
+)
 
+# Mount all routers under /api prefix
+api_app = FastAPI()
+api_app.include_router(articles.router)
+api_app.include_router(comments.router)
+api_app.include_router(favorites.router)
+api_app.include_router(profile.router)
+api_app.include_router(tags.router)
+api_app.include_router(user_and_authentication.router)
+
+app.mount("/api", api_app)
 
 @app.get("/")
 async def root():

@@ -56,3 +56,4 @@ kpworld
 - **Use Pydantic Models**: Define request and response models using Pydantic for data validation and serialization.
 - **Implement CRUD Operations**: Each router should implement Create, Read, Update, and Delete operations as specified in the OpenAPI contract.
 - **Database Interactions**: Use SQLAlchemy for database interactions. Define models in `models.py` and use Alembic for migrations.
+- **CORS**: Configure CORS via FastAPI middleware to allow cross-origin requests. Settings should be overridable in each environment by environment vars managed in .env

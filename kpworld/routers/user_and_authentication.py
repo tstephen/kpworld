@@ -4,66 +4,180 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+from typing import Optional
 
-from ..dependencies import *
+from ..models import (
+    UserGetResponse, UserPutRequest, UserPutResponse,
+    UsersLoginPostRequest, UsersLoginPostResponse,
+    UsersPostRequest, UsersPostResponse, User, GenericErrorModel
+)
+from ..database import get_db
+from ..db_models import User as DBUser
 
 router = APIRouter(tags=['User and Authentication'])
 
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# JWT settings
+SECRET_KEY = "your-secret-key"  # In production, use secure environment variable
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def get_current_user(db: Session = Depends(get_db), token: str = Depends(get_token)) -> DBUser:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Token"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user = db.query(DBUser).filter(DBUser.email == email).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+def get_token(authorization: Optional[str] = None):
+    if not authorization or not authorization.startswith("Token "):
+        return None
+    return authorization.replace("Token ", "")
 
 @router.get(
     '/user',
     response_model=UserGetResponse,
     responses={'422': {'model': GenericErrorModel}},
-    tags=['User and Authentication'],
 )
-def get_current_user() -> Union[UserGetResponse, GenericErrorModel]:
-    """
-    Get current user
-    """
-    pass
-
+def get_current_user_endpoint(
+    current_user: DBUser = Depends(get_current_user)
+) -> UserGetResponse:
+    """Get current user"""
+    return UserGetResponse(user=User(
+        email=current_user.email,
+        token=create_access_token({"sub": current_user.email}),
+        username=current_user.username,
+        bio=current_user.bio,
+        image=current_user.image
+    ))
 
 @router.put(
     '/user',
     response_model=UserPutResponse,
     responses={'422': {'model': GenericErrorModel}},
-    tags=['User and Authentication'],
 )
 def update_current_user(
     body: UserPutRequest,
-) -> Union[UserPutResponse, GenericErrorModel]:
-    """
-    Update current user
-    """
-    pass
-
+    current_user: DBUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> UserPutResponse:
+    """Update current user"""
+    if body.user.email and body.user.email != current_user.email:
+        if db.query(DBUser).filter(DBUser.email == body.user.email).first():
+            raise HTTPException(status_code=422, detail="Email already registered")
+    
+    if body.user.username and body.user.username != current_user.username:
+        if db.query(DBUser).filter(DBUser.username == body.user.username).first():
+            raise HTTPException(status_code=422, detail="Username already taken")
+    
+    update_data = body.user.dict(exclude_unset=True)
+    if "password" in update_data:
+        update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+    
+    for key, value in update_data.items():
+        setattr(current_user, key, value)
+    
+    db.commit()
+    db.refresh(current_user)
+    
+    return UserPutResponse(user=User(
+        email=current_user.email,
+        token=create_access_token({"sub": current_user.email}),
+        username=current_user.username,
+        bio=current_user.bio,
+        image=current_user.image
+    ))
 
 @router.post(
     '/users',
-    response_model=None,
-    responses={
-        '201': {'model': UsersPostResponse},
-        '422': {'model': GenericErrorModel},
-    },
-    tags=['User and Authentication'],
+    status_code=status.HTTP_201_CREATED,
+    response_model=UsersPostResponse,
+    responses={'422': {'model': GenericErrorModel}},
 )
 def create_user(
     body: UsersPostRequest,
-) -> Optional[Union[UsersPostResponse, GenericErrorModel]]:
-    pass
-
+    db: Session = Depends(get_db)
+) -> UsersPostResponse:
+    """Register a new user"""
+    if db.query(DBUser).filter(DBUser.email == body.user.email).first():
+        raise HTTPException(status_code=422, detail="Email already registered")
+    
+    if db.query(DBUser).filter(DBUser.username == body.user.username).first():
+        raise HTTPException(status_code=422, detail="Username already taken")
+    
+    db_user = DBUser(
+        email=body.user.email,
+        username=body.user.username,
+        hashed_password=get_password_hash(body.user.password.get_secret_value()),
+        bio="",
+        image=""
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    
+    return UsersPostResponse(user=User(
+        email=db_user.email,
+        token=create_access_token({"sub": db_user.email}),
+        username=db_user.username,
+        bio=db_user.bio,
+        image=db_user.image
+    ))
 
 @router.post(
     '/users/login',
     response_model=UsersLoginPostResponse,
     responses={'422': {'model': GenericErrorModel}},
-    tags=['User and Authentication'],
 )
 def login(
     body: UsersLoginPostRequest,
-) -> Union[UsersLoginPostResponse, GenericErrorModel]:
-    """
-    Existing user login
-    """
-    pass
+    db: Session = Depends(get_db)
+) -> UsersLoginPostResponse:
+    """Existing user login"""
+    user = db.query(DBUser).filter(DBUser.email == body.user.email).first()
+    if not user or not verify_password(body.user.password.get_secret_value(), user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Token"},
+        )
+    
+    return UsersLoginPostResponse(user=User(
+        email=user.email,
+        token=create_access_token({"sub": user.email}),
+        username=user.username,
+        bio=user.bio,
+        image=user.image
+    ))

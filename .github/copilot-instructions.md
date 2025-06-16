@@ -5,7 +5,7 @@
 - **Swagger/OpenAPI**: API documentation in `docs/openapi.yaml`.
 - **FastAPI**: REST API implementation.
 - **SQLAlchemy**: ORM for database interactions.
-- **PostgreSQL**: Database for storing data.
+- **PostgreSQL**: Database for storing data. Run a local PostgreSQL instance in a Docker container.
 - **Alembic**: Database migrations.
 - **Pydantic**: Data validation and serialization.
 - **Poetry**: Dependency management and packaging.
@@ -50,3 +50,9 @@ kpworld
     └── __init__.py
 ```
 
+## Implementation guidelines
+
+- **Follow OpenAPI Specification**: Ensure all endpoints, request/response models, and error handling conform to the OpenAPI contract defined in `docs/openapi.yaml`.
+- **Use Pydantic Models**: Define request and response models using Pydantic for data validation and serialization.
+- **Implement CRUD Operations**: Each router should implement Create, Read, Update, and Delete operations as specified in the OpenAPI contract.
+- **Database Interactions**: Use SQLAlchemy for database interactions. Define models in `models.py` and use Alembic for migrations.

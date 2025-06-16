@@ -14,3 +14,7 @@
 1. Asked why and it said 'only returning valid response not updating the in-memory db (dict)"
 
   - it offered to fix, I accepted, the resulting code didn't even run (ValidationError)
+
+1. added some implementation guidelines, also generated but seemed sensible.
+
+  - it seemed confused by not having a database so reverted to 'Ask' mode and told it generate a script to start a postgres container. 

@@ -24,6 +24,8 @@ fastapi-code-generator = "^0.5.4"
 [project.scripts]
 generate = "scripts:generate"
 server = "scripts:server"
+startdb = "scripts:start_db"
+stopdb = "scripts:stop_db"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

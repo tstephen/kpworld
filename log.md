@@ -24,4 +24,11 @@
    > Please implement the methods under kpworld/routers to provide the crud operations expected by openapi.yaml.
 
    - a lot of interactive prompts such as poetry install, poetry run alembic init ... 
-   - stopped after implementing user and auth, let's see how it did
+   - stopped after implementing user and auth, offering to continue on other methods when I said so.
+   - So let's pause and see how it did.
+   - The server failed to start because `Depends(get_token)` was used before it was defined.
+     I did note it reordering methods at one point, so perhaps this was a style based feedback that did not understand the `Depends` construct.
+     However, it was a simple fix after which the app started.
+   - I also noticed that the Real World `openapi.yaml` only contained the reference url so I added the local development server.
+   - After that, I was able to create a new user (whilst unauthenticated, but ok, server initialisation is tricky).
+     But not able to login with this user--because CORS not set up.

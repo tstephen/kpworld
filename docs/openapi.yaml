@@ -18,6 +18,9 @@ tags:
   - name: User and Authentication
 servers:
   - url: https://api.realworld.io/api
+    description: Reference implementation server
+  - url: http://localhost:8000/api
+    description: Local development server
 paths:
   /users/login:
     post:

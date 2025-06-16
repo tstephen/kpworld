@@ -7,6 +7,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
+from fastapi.responses import FileResponse
 
 from .routers import (
     articles,
@@ -22,14 +23,7 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8000").split(",")
 CORS_METHODS = os.getenv("CORS_METHODS", "GET,POST,PUT,DELETE").split(",")
 CORS_HEADERS = os.getenv("CORS_HEADERS", "Authorization,Content-Type").split(",")
 
-app = FastAPI(
-    title='RealWorld Conduit API',
-    description='Conduit API documentation',
-    contact={'name': 'RealWorld', 'url': 'https://realworld-docs.netlify.app/'},
-    license={'name': 'MIT License', 'url': 'https://opensource.org/licenses/MIT'},
-    version='1.0.0',
-    servers=[{'url': 'https://api.realworld.io/api'}],
-)
+app = FastAPI()
 
 # Add CORS middleware
 app.add_middleware(
@@ -40,8 +34,21 @@ app.add_middleware(
     allow_headers=CORS_HEADERS,
 )
 
+@app.get("/api/openapi.yaml", include_in_schema=False)
+async def openapi_yaml():
+    return FileResponse("docs/openapi.yaml", media_type="application/yaml")
+
 # Mount all routers under /api prefix
-api_app = FastAPI()
+api_app = FastAPI(
+    title='RealWorld Conduit API',
+    description='Conduit API documentation',
+    contact={'name': 'RealWorld', 'url': 'https://realworld-docs.netlify.app/'},
+    license={'name': 'MIT License', 'url': 'https://opensource.org/licenses/MIT'},
+    version='1.0.0',
+    servers=[
+        {'url': 'https://api.realworld.io/api', "description": "Reference implementation server"},
+    ],
+)
 api_app.include_router(articles.router)
 api_app.include_router(comments.router)
 api_app.include_router(favorites.router)

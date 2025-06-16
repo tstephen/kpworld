@@ -46,3 +46,5 @@
      > 3. Remove servers config since we're handling the /api prefix properly now
 
      1 & 3 were unnecessary, and IMO undesirable.
+
+     I restored the servers and overrode the openapi.yaml to ensure we serve the actual contract not a potentially divergent one based on routers.

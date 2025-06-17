@@ -86,3 +86,7 @@
 1. When all's said and done, I was not suppling the `Token ` prefix required by `openapi.yaml` but only the JWT in the authorization field. But the field should _NOT_ have been there, it should be aN Authorization header.
 
    So is this a fastapi generator issue or Copilot?
+
+   Yep, copilot.
+
+   Regenerated stubs and no Authorization parameter in sight.

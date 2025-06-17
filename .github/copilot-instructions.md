@@ -59,6 +59,7 @@ kpworld
   - logger use should never us f-strings but instead use the logger's built-in formatting capabilities, e.g. `logger.info("User %s created", user.username)`.
 
 - **Follow OpenAPI Specification**: Ensure all endpoints, request/response models, and error handling conform to the OpenAPI contract defined in `docs/openapi.yaml`.
+  - **Use Dependency Injection**: Use FastAPI's dependency injection system to manage dependencies like authentication, database sessions, and other shared resources.
 - **Use Pydantic Models**: Define request and response models using Pydantic for data validation and serialization.
 - **Implement CRUD Operations**: Each router should implement Create, Read, Update, and Delete operations as specified in the OpenAPI contract.
 - **Database Interactions**: Use SQLAlchemy for database interactions. Define models in `models.py` and use Alembic for migrations.

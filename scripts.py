@@ -63,3 +63,62 @@ def stop_db():
         ["docker", "stop", container_name],
         check=False
     )
+
+def init_db():
+    """Initialize the database schema and add initial data."""
+    print("Starting database if not running...")
+    try:
+        start_db()
+    except subprocess.CalledProcessError:
+        print("Database already running")
+
+    print("Running database migrations...")
+    subprocess.run([
+        sys.executable, "-m", "alembic",
+        "upgrade", "head"
+    ], check=True)
+
+    print("Adding initial data...")
+    from kpworld.database import SessionLocal
+    from kpworld.db_models import User, Article, Tag
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    db = SessionLocal()
+
+    # Add demo user if it doesn't exist
+    if not db.query(User).filter(User.email == "demo@demo.com").first():
+        demo_user = User(
+            email="demo@demo.com",
+            username="demo",
+            hashed_password=pwd_context.hash("demo"),
+            bio="I'm a demo user",
+            image="https://api.realworld.io/images/demo-avatar.png"
+        )
+        db.add(demo_user)
+        db.commit()
+        
+        # Add some tags
+        tags = [
+            Tag(name="dragons"),
+            Tag(name="training"),
+            Tag(name="nodejs"),
+            Tag(name="fastapi")
+        ]
+        db.add_all(tags)
+        db.commit()
+
+        # Add a demo article
+        article = Article(
+            title="Welcome to KP World",
+            description="A Real World implementation in FastAPI",
+            body="This is a demo article in the KP World implementation.",
+            slug="welcome-to-kp-world",
+            author_id=demo_user.id,
+            tags=tags[:2]  # Add first two tags to article
+        )
+        db.add(article)
+        db.commit()
+
+    db.close()
+    print("Database initialization complete!")

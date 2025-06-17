@@ -48,3 +48,41 @@
      1 & 3 were unnecessary, and IMO undesirable.
 
      I restored the servers and overrode the openapi.yaml to ensure we serve the actual contract not a potentially divergent one based on routers.
+
+1. Shutdown at this point and on restarting the db is empty. Asked copilot:
+
+   > Can you add a script to pyproject.toml and scripts.py that will initialise the database from the current alembic state
+
+   It went further adding demo user, sample tags and a welcome article. In its comfort zone here!
+
+   Remember to `poetry install` before this new init-db is available.
+
+1. Login worked and provided token, so thought I'd try to update the user:
+
+   ```
+   File "/mnt/data/git/kpworld/kpworld/routers/user_and_authentication.py", line 57, in get_current_user
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tstephen/.cache/pypoetry/virtualenvs/kpworld-rB5i1SEH-py3.12/lib/python3.12/site-packages/jose/jwt.py", line 159, in decode
+    payload = jws.verify(token, key, algorithms, verify=verify_signature)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tstephen/.cache/pypoetry/virtualenvs/kpworld-rB5i1SEH-py3.12/lib/python3.12/site-packages/jose/jws.py", line 74, in verify
+    header, payload, signing_input, signature = _load(token)
+                                                ^^^^^^^^^^^^
+  File "/home/tstephen/.cache/pypoetry/virtualenvs/kpworld-rB5i1SEH-py3.12/lib/python3.12/site-packages/jose/jws.py", line 180, in _load
+    signing_input, crypto_segment = jwt.rsplit(b".", 1)
+                                    ^^^^^^^^^^
+  AttributeError: 'NoneType' object has no attribute 'rsplit'
+  INFO:     127.0.0.1:53906 - "PUT /api/user?authorization=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZW1vQGRlbW8uY29tIiwiZXhwIjoxNzUwMTcwMzI0fQ.eT_yAqDczbuQQLAHC5BmXDGjO_SzuH-q_anBKPR8jc0 HTTP/1.1" 500 Internal Server Error
+   ```
+
+1. We're going to need some logging so I wrote some instructions and prompted:
+
+   > please generate a logging.conf file to configure Python's built-in logging framework to log to console and file at the debug threshold for this project's code and warning for all third party code.
+   > load this configuration within main.py in accordance with the copilot-instructions
+
+   I did not specify the format of the file so it inferred ini-style from the .conf ending. No matter.
+
+1. When all's said and done, I was not suppling the `Token ` prefix required by `openapi.yaml` but only the JWT in the authorization field. But the field should _NOT_ have been there, it should be aN Authorization header.
+
+   So is this a fastapi generator issue or Copilot?

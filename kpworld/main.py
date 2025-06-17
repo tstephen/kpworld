@@ -6,8 +6,17 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
 from fastapi.responses import FileResponse
+import os
+import logging
+import logging.config
+from pathlib import Path
+
+# Configure logging
+logging_conf_path = Path(__file__).parent.parent / "logging.conf"
+logging.config.fileConfig(logging_conf_path, disable_existing_loggers=False)
+
+logger = logging.getLogger(__name__)
 
 from .routers import (
     articles,
@@ -18,10 +27,16 @@ from .routers import (
     user_and_authentication,
 )
 
+# Log application startup
+logger.info("Starting KP World API")
+
 # CORS Configuration from environment variables
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8000").split(",")
 CORS_METHODS = os.getenv("CORS_METHODS", "GET,POST,PUT,DELETE").split(",")
 CORS_HEADERS = os.getenv("CORS_HEADERS", "Authorization,Content-Type").split(",")
+
+logger.debug("CORS configuration: origins=%s, methods=%s, headers=%s", 
+            CORS_ORIGINS, CORS_METHODS, CORS_HEADERS)
 
 app = FastAPI()
 

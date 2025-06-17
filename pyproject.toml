@@ -34,6 +34,7 @@ generate = "scripts:generate"
 server = "scripts:server"
 start-db = "scripts:start_db"
 stop-db = "scripts:stop_db"
+init-db = "scripts:init_db"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

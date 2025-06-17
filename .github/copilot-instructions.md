@@ -52,6 +52,12 @@ kpworld
 
 ## Implementation guidelines
 
+- **Logging**:
+  - Use Python's built-in logging module for logging. Configure logging in `main.py` by reading from `logging.conf`.
+  - every method should log its entry and exit points (info level), as well as any exceptions raised (error level).
+  - a single logger should be declared at the top of each module, e.g. `logger = logging.getLogger(__name__)`.
+  - logger use should never us f-strings but instead use the logger's built-in formatting capabilities, e.g. `logger.info("User %s created", user.username)`.
+
 - **Follow OpenAPI Specification**: Ensure all endpoints, request/response models, and error handling conform to the OpenAPI contract defined in `docs/openapi.yaml`.
 - **Use Pydantic Models**: Define request and response models using Pydantic for data validation and serialization.
 - **Implement CRUD Operations**: Each router should implement Create, Read, Update, and Delete operations as specified in the OpenAPI contract.

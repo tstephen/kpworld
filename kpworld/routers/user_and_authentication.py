@@ -3,67 +3,200 @@
 #   timestamp: 2025-06-17T15:01:36+00:00
 
 from __future__ import annotations
+import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
-from ..dependencies import *
+from ..auth import create_access_token, get_current_user, get_password_hash, verify_password
+from ..database import get_db
+from ..db_models import User as DBUser
+from ..models import (
+    User, UserGetResponse, UserPutRequest, UserPutResponse,
+    UsersLoginPostRequest, UsersLoginPostResponse,
+    UsersPostRequest, UsersPostResponse
+)
 
-router = APIRouter(tags=['User and Authentication'])
+logger = logging.getLogger(__name__)
+
+router = APIRouter(tags=["User and Authentication"])
+
+
+@router.post(
+    "/users/login",
+    response_model=UsersLoginPostResponse,
+    responses={"401": {"description": "Invalid credentials"}},
+)
+async def login(
+    body: UsersLoginPostRequest,
+    db: Session = Depends(get_db)
+) -> UsersLoginPostResponse:
+    """Login existing user."""
+    logger.info("Processing login for email: %s", body.user.email)
+
+    user = db.query(DBUser).filter(DBUser.email == body.user.email).first()
+    if not user or not verify_password(body.user.password.get_secret_value(), user.hashed_password):
+        logger.warning("Login failed for email: %s", body.user.email)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Token"},
+        )
+
+    token = create_access_token({"sub": user.email})
+    logger.info("Login successful for user: %s", user.email)
+
+    return UsersLoginPostResponse(
+        user=User(
+            email=user.email,
+            token=token,
+            username=user.username,
+            bio=user.bio or "",
+            image=user.image or ""
+        )
+    )
+
+
+@router.post(
+    "/users",
+    status_code=status.HTTP_201_CREATED,
+    response_model=UsersPostResponse,
+)
+async def create_user(
+    body: UsersPostRequest,
+    db: Session = Depends(get_db)
+) -> UsersPostResponse:
+    """Register a new user."""
+    logger.info("Processing registration for email: %s", body.user.email)
+
+    # Check for existing user with same email
+    if db.query(DBUser).filter(DBUser.email == body.user.email).first():
+        logger.warning("Registration failed: email already exists: %s", body.user.email)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Email already registered"
+        )
+
+    # Check for existing user with same username
+    if db.query(DBUser).filter(DBUser.username == body.user.username).first():
+        logger.warning("Registration failed: username already taken: %s", body.user.username)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Username already taken"
+        )
+
+    # Create new user
+    try:
+        db_user = DBUser(
+            email=body.user.email,
+            username=body.user.username,
+            hashed_password=get_password_hash(body.user.password.get_secret_value()),
+            bio="",
+            image=""
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+
+        token = create_access_token({"sub": db_user.email})
+        logger.info("User registered successfully: %s", db_user.email)
+
+        return UsersPostResponse(
+            user=User(
+                email=db_user.email,
+                token=token,
+                username=db_user.username,
+                bio=db_user.bio,
+                image=db_user.image
+            )
+        )
+    except Exception as e:
+        logger.error("Failed to create user: %s", str(e))
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user"
+        ) from e
 
 
 @router.get(
-    '/user',
+    "/user",
     response_model=UserGetResponse,
-    responses={'422': {'model': GenericErrorModel}},
-    tags=['User and Authentication'],
 )
-def get_current_user() -> Union[UserGetResponse, GenericErrorModel]:
-    """
-    Get current user
-    """
-    pass
+async def get_current_user_profile(
+    current_user: DBUser = Depends(get_current_user)
+) -> UserGetResponse:
+    """Get currently logged-in user."""
+    logger.info("Fetching profile for user: %s", current_user.email)
+
+    return UserGetResponse(
+        user=User(
+            email=current_user.email,
+            token=create_access_token({"sub": current_user.email}),
+            username=current_user.username,
+            bio=current_user.bio or "",
+            image=current_user.image or ""
+        )
+    )
 
 
 @router.put(
-    '/user',
+    "/user",
     response_model=UserPutResponse,
-    responses={'422': {'model': GenericErrorModel}},
-    tags=['User and Authentication'],
 )
-def update_current_user(
+async def update_current_user_profile(
     body: UserPutRequest,
-) -> Union[UserPutResponse, GenericErrorModel]:
-    """
-    Update current user
-    """
-    pass
+    current_user: DBUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> UserPutResponse:
+    """Update current user's information."""
+    logger.info("Updating profile for user: %s", current_user.email)
 
+    # Check email uniqueness if being updated
+    if body.user.email and body.user.email != current_user.email:
+        if db.query(DBUser).filter(DBUser.email == body.user.email).first():
+            logger.warning("Update failed: email already exists: %s", body.user.email)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Email already registered"
+            )
 
-@router.post(
-    '/users',
-    response_model=None,
-    responses={
-        '201': {'model': UsersPostResponse},
-        '422': {'model': GenericErrorModel},
-    },
-    tags=['User and Authentication'],
-)
-def create_user(
-    body: UsersPostRequest,
-) -> Optional[Union[UsersPostResponse, GenericErrorModel]]:
-    pass
+    # Check username uniqueness if being updated
+    if body.user.username and body.user.username != current_user.username:
+        if db.query(DBUser).filter(DBUser.username == body.user.username).first():
+            logger.warning("Update failed: username already taken: %s", body.user.username)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Username already taken"
+            )
 
+    try:
+        # Update user fields
+        update_data = body.user.dict(exclude_unset=True)
+        if "password" in update_data:
+            update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
 
-@router.post(
-    '/users/login',
-    response_model=UsersLoginPostResponse,
-    responses={'422': {'model': GenericErrorModel}},
-    tags=['User and Authentication'],
-)
-def login(
-    body: UsersLoginPostRequest,
-) -> Union[UsersLoginPostResponse, GenericErrorModel]:
-    """
-    Existing user login
-    """
-    pass
+        for key, value in update_data.items():
+            setattr(current_user, key, value)
+
+        db.commit()
+        db.refresh(current_user)
+
+        logger.info("User profile updated successfully: %s", current_user.email)
+
+        return UserPutResponse(
+            user=User(
+                email=current_user.email,
+                token=create_access_token({"sub": current_user.email}),
+                username=current_user.username,
+                bio=current_user.bio or "",
+                image=current_user.image or ""
+            )
+        )
+    except Exception as e:
+        logger.error("Failed to update user profile: %s", str(e))
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user profile"
+        ) from e

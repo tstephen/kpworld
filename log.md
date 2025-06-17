@@ -1,5 +1,7 @@
 # Log of prompts provided
 
+## Phase 1: About 1h
+
 1. please implement the docs/openapi.yaml contract using the instructions provided
 
   - did nothing but highlight what I had done (generated stubs with pass)
@@ -18,6 +20,8 @@
 1. added some implementation guidelines, also generated but seemed sensible.
 
   - it seemed confused by not having a database so reverted to 'Ask' mode and told it generate a script to start a postgres container. 
+
+## Phase 2: about 2h
 
 1. cleared out the generated code back to empty fast API stubs and prompted (this time using Claude 3.5): 
 
@@ -48,6 +52,8 @@
      1 & 3 were unnecessary, and IMO undesirable.
 
      I restored the servers and overrode the openapi.yaml to ensure we serve the actual contract not a potentially divergent one based on routers.
+
+## Phase 3: 2h
 
 1. Shutdown at this point and on restarting the db is empty. Asked copilot:
 
@@ -90,3 +96,8 @@
    Yep, copilot.
 
    Regenerated stubs and no Authorization parameter in sight.
+
+## Phase 4
+
+1. So about 3h to screw up and break the provided openapi contract and 2h for me to debug it and put it back on the straight and narrow!
+   Preliminary conclusion is that this thing needs a lot of supervision, good ideas generator, learning assistant and perhaps syntax assistant.

@@ -4,7 +4,13 @@
 
 from __future__ import annotations
 
+import logging.config
+import os
+from typing import List
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .routers import (
     articles,
@@ -15,12 +21,27 @@ from .routers import (
     user_and_authentication,
 )
 
+# Configure logging
+logging.config.fileConfig('logging.conf', disable_existing_loggers=False)
+logger = logging.getLogger(__name__)
+
+# Get CORS settings from environment variables
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+CORS_METHODS = os.getenv("CORS_METHODS", "GET,POST,PUT,DELETE,OPTIONS").split(",")
+CORS_HEADERS = os.getenv("CORS_HEADERS", "*").split(",")
+
+# Create the main FastAPI application
 app = FastAPI(
     title='RealWorld Conduit API',
     description='Conduit API documentation',
     contact={'name': 'RealWorld', 'url': 'https://realworld-docs.netlify.app/'},
     license={'name': 'MIT License', 'url': 'https://opensource.org/licenses/MIT'},
     version='1.0.0',
+)
+
+# Create a sub-application for /api routes
+api_app = FastAPI(
+    title='RealWorld Conduit API',
     servers=[
         {
             'url': 'https://api.realworld.io/api',
@@ -30,14 +51,28 @@ app = FastAPI(
     ],
 )
 
-app.include_router(articles.router)
-app.include_router(comments.router)
-app.include_router(favorites.router)
-app.include_router(profile.router)
-app.include_router(tags.router)
-app.include_router(user_and_authentication.router)
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=CORS_METHODS,
+    allow_headers=CORS_HEADERS,
+)
+
+# Include all routers
+api_app.include_router(articles.router)
+api_app.include_router(comments.router)
+api_app.include_router(favorites.router)
+api_app.include_router(profile.router)
+api_app.include_router(tags.router)
+api_app.include_router(user_and_authentication.router)
+
+# Mount the API app under /api
+app.mount("/api", api_app)
 
 
 @app.get("/")
 async def root():
+    logger.info("Handling request to root endpoint")
     return {"message": "Gateway of the App"}

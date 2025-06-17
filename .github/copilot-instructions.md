@@ -52,6 +52,18 @@ kpworld
 
 ## Implementation guidelines
 
+- **Project and dependency**:
+  - Use Poetry for dependency management. Define all dependencies in `pyproject.toml`.
+  - Use `scripts.py` for any custom scripts, such as database initialization or data seeding.
+  - Use `.env` file for environment-specific configurations, such as database connection strings and secret keys.
+- **Code Style**:
+  - Follow PEP 8 coding style guidelines.
+  - use `pre-commit` hooks to enforce code quality checks before committing code.
+  - Use `black` for code formatting and `isort` for import sorting.
+  - Use `mypy` for static type checking.
+  - Use `flake8` for linting and code style checks.
+  - Use `bandit` for security checks.
+  - Use `coverage.py` to measure code coverage in tests.
 - **Logging**:
   - Use Python's built-in logging module for logging. Configure logging in `main.py` by reading from `logging.conf`.
   - every method should log its entry and exit points (info level), as well as any exceptions raised (error level).

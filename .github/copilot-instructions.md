@@ -73,6 +73,7 @@ kpworld
 
 - **Follow OpenAPI Specification**: Ensure all endpoints, request/response models, and error handling conform to the OpenAPI contract defined in `docs/openapi.yaml`.
   - **Use Dependency Injection**: Use FastAPI's dependency injection system to manage dependencies like authentication, database sessions, and other shared resources.
+  - **Tags**: Use tags in the OpenAPI contract to group related endpoints together. Each router should correspond to a tag in the OpenAPI specification. Do not remove tags when performing edits.
 - **Use Pydantic Models**: Define request and response models using Pydantic for data validation and serialization.
 - **Implement CRUD Operations**:
   - Each router should implement Create, Read, Update, and Delete operations as specified in the OpenAPI contract.

@@ -4,11 +4,43 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+import logging
+from typing import Union
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session, joinedload
+
+from ..auth import get_current_user
+from ..database import get_db
+from ..db_models import Article as DBArticle, Comment as DBComment, User as DBUser
+from ..models import (
+    ArticlesSlugCommentsGetResponse,
+    ArticlesSlugCommentsPostRequest,
+    ArticlesSlugCommentsPostResponse,
+    GenericErrorModel,
+    Comment,
+    Profile,
+)
 
 from ..dependencies import *
 
-router = APIRouter(tags=['Comments'])
+logger = logging.getLogger(__name__)
+
+router = APIRouter(tags=["Comments"])
+
+
+def _create_comment_response(db_comment: DBComment, current_user: DBUser = None) -> Comment:
+    return Comment(
+        id=db_comment.id,
+        createdAt=db_comment.created_at,
+        updatedAt=db_comment.updated_at,
+        body=db_comment.body,
+        author=Profile(
+            username=db_comment.author.username,
+            bio=db_comment.author.bio or '',
+            image=db_comment.author.image or '',
+            following=current_user is not None and db_comment.author in current_user.following,
+        ),
+    )
 
 
 @router.get(
@@ -17,13 +49,29 @@ router = APIRouter(tags=['Comments'])
     responses={'422': {'model': GenericErrorModel}},
     tags=['Comments'],
 )
-def get_article_comments(
+async def get_comments(
     slug: str,
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_user),
 ) -> Union[ArticlesSlugCommentsGetResponse, GenericErrorModel]:
     """
-    Get comments for an article
+    List comments for an article.
     """
-    pass
+    logger.info('Fetching comments for article: %s', slug)
+    article = db.query(DBArticle).filter(DBArticle.slug == slug).first()
+    if not article:
+        logger.warning('Article not found with slug: %s', slug)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Article not found',
+        )
+    comments = db.query(DBComment).options(
+        joinedload(DBComment.author)
+    ).filter(DBComment.article_id == article.id).order_by(DBComment.created_at.asc()).all()
+    logger.info('Found %d comments for article: %s', len(comments), slug)
+    return ArticlesSlugCommentsGetResponse(
+        comments=[_create_comment_response(comment, current_user) for comment in comments]
+    )
 
 
 @router.post(
@@ -32,23 +80,90 @@ def get_article_comments(
     responses={'422': {'model': GenericErrorModel}},
     tags=['Comments'],
 )
-def create_article_comment(
-    slug: str, body: ArticlesSlugCommentsPostRequest = ...
+async def add_comment(
+    slug: str,
+    body: ArticlesSlugCommentsPostRequest,
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_user),
 ) -> Union[ArticlesSlugCommentsPostResponse, GenericErrorModel]:
     """
-    Create a comment for an article
+    Add a comment to an article.
     """
-    pass
+    logger.info('User %s adding comment to article: %s', current_user.username, slug)
+    article = db.query(DBArticle).filter(DBArticle.slug == slug).first()
+    if not article:
+        logger.warning('Article not found with slug: %s', slug)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Article not found',
+        )
+    try:
+        comment = DBComment(
+            body=body.comment.body,
+            author_id=current_user.id,
+            article_id=article.id,
+        )
+        db.add(comment)
+        db.commit()
+        db.refresh(comment)
+        logger.info('Comment added to article %s by user %s', slug, current_user.username)
+        return ArticlesSlugCommentsPostResponse(
+            comment=_create_comment_response(comment, current_user)
+        )
+    except Exception as e:
+        logger.error('Failed to add comment: %s', str(e))
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='Failed to add comment',
+        ) from e
 
 
 @router.delete(
     '/articles/{slug}/comments/{id}',
+    status_code=status.HTTP_204_NO_CONTENT,
     response_model=None,
     responses={'422': {'model': GenericErrorModel}},
     tags=['Comments'],
 )
-def delete_article_comment(slug: str, id: int = ...) -> Optional[GenericErrorModel]:
+async def delete_comment(
+    slug: str,
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: DBUser = Depends(get_current_user),
+) -> None:
     """
-    Delete a comment for an article
+    Delete a comment.
     """
-    pass
+    logger.info('User %s deleting comment %d from article: %s', current_user.username, id, slug)
+    article = db.query(DBArticle).filter(DBArticle.slug == slug).first()
+    if not article:
+        logger.warning('Article not found with slug: %s', slug)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Article not found',
+        )
+    comment = db.query(DBComment).filter(DBComment.id == id, DBComment.article_id == article.id).first()
+    if not comment:
+        logger.warning('Comment not found with id: %d for article: %s', id, slug)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Comment not found',
+        )
+    if comment.author_id != current_user.id:
+        logger.warning('User %s attempted to delete comment %d not owned by them', current_user.username, id)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only the author can delete the comment',
+        )
+    try:
+        db.delete(comment)
+        db.commit()
+        logger.info('Comment %d deleted from article %s by user %s', id, slug, current_user.username)
+    except Exception as e:
+        logger.error('Failed to delete comment: %s', str(e))
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='Failed to delete comment',
+        ) from e

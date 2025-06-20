@@ -26,8 +26,8 @@ router = APIRouter(tags=["User and Authentication"])
 @router.post(
     "/users/login",
     response_model=UsersLoginPostResponse,
-    responses={"401": {"description": "Invalid credentials"}},
-    responses={"422": {"model": GenericErrorModel}},
+    responses={"401": {"description": "Invalid credentials"},
+    "422": {"model": GenericErrorModel}},
     tags=['User and Authentication'],
 )
 async def login(

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 import logging
+from typing import Union
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -12,7 +13,7 @@ from ..auth import create_access_token, get_current_user, get_password_hash, ver
 from ..database import get_db
 from ..db_models import User as DBUser
 from ..models import (
-    User, UserGetResponse, UserPutRequest, UserPutResponse,
+    GenericErrorModel, User, UserGetResponse, UserPutRequest, UserPutResponse,
     UsersLoginPostRequest, UsersLoginPostResponse,
     UsersPostRequest, UsersPostResponse
 )
@@ -26,12 +27,13 @@ router = APIRouter(tags=["User and Authentication"])
     "/users/login",
     response_model=UsersLoginPostResponse,
     responses={"401": {"description": "Invalid credentials"}},
+    responses={"422": {"model": GenericErrorModel}},
     tags=['User and Authentication'],
 )
 async def login(
     body: UsersLoginPostRequest,
     db: Session = Depends(get_db)
-) -> UsersLoginPostResponse:
+) -> Union[UsersLoginPostResponse, GenericErrorModel]:
     """Login existing user."""
     logger.info("Processing login for email: %s", body.user.email)
 
@@ -62,12 +64,13 @@ async def login(
     "/users",
     status_code=status.HTTP_201_CREATED,
     response_model=UsersPostResponse,
+    responses={"422": {"model": GenericErrorModel}},
     tags=['User and Authentication'],
 )
 async def create_user(
     body: UsersPostRequest,
     db: Session = Depends(get_db)
-) -> UsersPostResponse:
+) -> Union[UsersPostResponse, GenericErrorModel]:
     """Register a new user."""
     logger.info("Processing registration for email: %s", body.user.email)
 
@@ -124,11 +127,12 @@ async def create_user(
 @router.get(
     "/user",
     response_model=UserGetResponse,
+    responses={"422": {"model": GenericErrorModel}},
     tags=['User and Authentication'],
 )
 async def get_current_user_profile(
     current_user: DBUser = Depends(get_current_user)
-) -> UserGetResponse:
+) -> Union[UserGetResponse, GenericErrorModel]:
     """Get currently logged-in user."""
     logger.info("Fetching profile for user: %s", current_user.email)
 
@@ -146,13 +150,14 @@ async def get_current_user_profile(
 @router.put(
     "/user",
     response_model=UserPutResponse,
+    responses={"422": {"model": GenericErrorModel}},
     tags=['User and Authentication'],
 )
 async def update_current_user_profile(
     body: UserPutRequest,
     current_user: DBUser = Depends(get_current_user),
     db: Session = Depends(get_db)
-) -> UserPutResponse:
+) -> Union[UserPutResponse, GenericErrorModel]:
     """Update current user's information."""
     logger.info("Updating profile for user: %s", current_user.email)
 

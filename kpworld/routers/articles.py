@@ -94,7 +94,7 @@ async def get_articles(
     limit: Optional[int] = Query(20, ge=1),
     db: Session = Depends(get_db),
     current_user: Optional[DBUser] = Depends(get_current_user),
-) -> ArticlesGetResponse:
+) -> Union[ArticlesGetResponse, GenericErrorModel]:
     """Get recent articles globally.
 
     Supports filtering by tag, author, and favorited status.
@@ -145,7 +145,7 @@ async def create_article(
     body: ArticlesPostRequest,
     db: Session = Depends(get_db),
     current_user: DBUser = Depends(get_current_user),
-) -> ArticlesPostResponse:
+) -> Union[ArticlesPostResponse, GenericErrorModel]:
     """Create a new article.
 
     Auth is required.
@@ -198,7 +198,7 @@ async def get_articles_feed(
     limit: Optional[int] = Query(20, ge=1),
     db: Session = Depends(get_db),
     current_user: DBUser = Depends(get_current_user),
-) -> ArticlesFeedGetResponse:
+) -> Union[ArticlesFeedGetResponse, GenericErrorModel]:
     """Get recent articles from users you follow.
 
     Auth is required.
@@ -240,7 +240,7 @@ async def get_article(
     slug: str,
     db: Session = Depends(get_db),
     current_user: Optional[DBUser] = Depends(get_current_user),
-) -> ArticlesSlugGetResponse:
+) -> Union[ArticlesSlugGetResponse, GenericErrorModel]:
     """Get an article by slug.
 
     Auth is optional.
@@ -280,7 +280,7 @@ async def update_article(
     body: ArticlesSlugPutRequest,
     db: Session = Depends(get_db),
     current_user: DBUser = Depends(get_current_user),
-) -> ArticlesSlugPutResponse:
+) -> Union[ArticlesSlugPutResponse, GenericErrorModel]:
     """Update an article.
 
     Auth is required. Only the author can update their articles.

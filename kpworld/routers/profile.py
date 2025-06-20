@@ -46,7 +46,7 @@ async def get_profile_by_username(
     username: str,
     db: Session = Depends(get_db),
     current_user: DBUser = Depends(get_current_user),
-) -> ProfilesUsernameGetResponse:
+) -> Union[ProfilesUsernameGetResponse, GenericErrorModel]:
     """Get a profile"""
     logger.info("Fetching profile for username: %s", username)
 
@@ -74,7 +74,7 @@ async def follow_user_by_username(
     username: str,
     db: Session = Depends(get_db),
     current_user: DBUser = Depends(get_current_user),
-) -> ProfilesUsernameFollowPostResponse:
+) -> Union[ProfilesUsernameFollowPostResponse, GenericErrorModel]:
     """Follow a user"""
     logger.info("User %s attempting to follow %s", current_user.username, username)
 
@@ -121,7 +121,7 @@ async def unfollow_user_by_username(
     username: str,
     db: Session = Depends(get_db),
     current_user: DBUser = Depends(get_current_user),
-) -> ProfilesUsernameFollowDeleteResponse:
+) -> Union[ProfilesUsernameFollowDeleteResponse, GenericErrorModel]:
     """Unfollow a user"""
     logger.info("User %s attempting to unfollow %s", current_user.username, username)
 

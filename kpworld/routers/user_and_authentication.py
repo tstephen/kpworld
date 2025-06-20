@@ -26,6 +26,7 @@ router = APIRouter(tags=["User and Authentication"])
     "/users/login",
     response_model=UsersLoginPostResponse,
     responses={"401": {"description": "Invalid credentials"}},
+    tags=['User and Authentication'],
 )
 async def login(
     body: UsersLoginPostRequest,
@@ -61,6 +62,7 @@ async def login(
     "/users",
     status_code=status.HTTP_201_CREATED,
     response_model=UsersPostResponse,
+    tags=['User and Authentication'],
 )
 async def create_user(
     body: UsersPostRequest,
@@ -122,6 +124,7 @@ async def create_user(
 @router.get(
     "/user",
     response_model=UserGetResponse,
+    tags=['User and Authentication'],
 )
 async def get_current_user_profile(
     current_user: DBUser = Depends(get_current_user)
@@ -143,6 +146,7 @@ async def get_current_user_profile(
 @router.put(
     "/user",
     response_model=UserPutResponse,
+    tags=['User and Authentication'],
 )
 async def update_current_user_profile(
     body: UserPutRequest,

@@ -40,6 +40,7 @@ def get_profile_response(target_user: DBUser, current_user: DBUser = None) -> Pr
     '/profiles/{username}',
     response_model=ProfilesUsernameGetResponse,
     responses={'422': {'model': GenericErrorModel}},
+    tags=['Profile'],
 )
 async def get_profile_by_username(
     username: str,
@@ -67,6 +68,7 @@ async def get_profile_by_username(
     '/profiles/{username}/follow',
     response_model=ProfilesUsernameFollowPostResponse,
     responses={'422': {'model': GenericErrorModel}},
+    tags=['Profile'],
 )
 async def follow_user_by_username(
     username: str,
@@ -113,6 +115,7 @@ async def follow_user_by_username(
     '/profiles/{username}/follow',
     response_model=ProfilesUsernameFollowDeleteResponse,
     responses={'422': {'model': GenericErrorModel}},
+    tags=['Profile'],
 )
 async def unfollow_user_by_username(
     username: str,

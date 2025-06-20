@@ -101,3 +101,33 @@
 
 1. So about 3h to screw up and break the provided openapi contract and 2h for me to debug it and put it back on the straight and narrow!
    Preliminary conclusion is that this thing needs a lot of supervision, good ideas generator, learning assistant and perhaps syntax assistant.
+
+1. However, having got this far we seemed to be on a roll. I asked it to implement profile routes and it did so correctly in a couple of minutes.
+   I forgot to commit the result before asking it to move on to articles at which point it tried to pip install poetry-slugify. I interupted to remind it to use poetry for dependency management, which it did but whether related to the interuption or the install it hung for quite a number of minutes before reporting a 500 server error. Sigh.
+
+1. Managed to save the profile changes,  added instructions about using poetry and some other code style and linting tools.
+   Rolled back the articles changes and asked it to try again.
+
+   Prmising, including a number of PEP 8 style changes and other little details but also these:
+
+   > SQLAlchemy query optimization with joinedload
+   > Proper transaction management with try/except blocks 
+
+   However, it repeatedly wanted to remove 
+
+   > response_model=None,
+   > responses={'422': {'model': GenericErrorModel}},
+
+   from delete function, which causes FastAPI to complain (and not start)
+
+   >  File "/home/tstephen/.cache/pypoetry/virtualenvs/kpworld-rB5i1SEH-py3.12/lib/python3.12/site-packages/fastapi/routing.py", line 507, in __init__
+   > assert is_body_allowed_for_status_code(status_code), (
+   >        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   > AssertionError: Status code 204 must not have a response body
+  
+1. Fixed that myself and queried /articles. There are none, a case that is apparently not handled.
+
+1. Rolled back articles changes, told it to ensure 404 and empty list if no results.
+   Reprompted.
+   It recreated the same 204 issue!
+   Also removed tags from endpoint decorators.

@@ -130,25 +130,25 @@ class ProfilesUsernameFollowDeleteResponse(BaseModel):
     profile: Profile
 
 
-class Article1(BaseModel):
-    slug: str
-    title: str
-    description: str
-    tagList: List[str]
-    createdAt: datetime
-    updatedAt: datetime
-    favorited: bool
-    favoritesCount: int
-    author: Profile
+# class Article1(BaseModel):
+#     slug: str
+#     title: str
+#     description: str
+#     tagList: List[str]
+#     createdAt: datetime
+#     updatedAt: datetime
+#     favorited: bool
+#     favoritesCount: int
+#     author: Profile
 
 
 class ArticlesFeedGetResponse(BaseModel):
-    articles: List[Article1]
+    articles: List[Article]
     articlesCount: int
 
 
 class ArticlesGetResponse(BaseModel):
-    articles: List[Article1]
+    articles: List[Article]
     articlesCount: int
 
 

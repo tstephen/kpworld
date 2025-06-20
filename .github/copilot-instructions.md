@@ -64,6 +64,7 @@ kpworld
   - Use `flake8` for linting and code style checks.
   - Use `bandit` for security checks.
   - Use `coverage.py` to measure code coverage in tests.
+  - Do not use relative imports; always use absolute imports.
 - **Logging**:
   - Use Python's built-in logging module for logging. Configure logging in `main.py` by reading from `logging.conf`.
   - every method should log its entry and exit points (info level), as well as any exceptions raised (error level).
@@ -73,6 +74,8 @@ kpworld
 - **Follow OpenAPI Specification**: Ensure all endpoints, request/response models, and error handling conform to the OpenAPI contract defined in `docs/openapi.yaml`.
   - **Use Dependency Injection**: Use FastAPI's dependency injection system to manage dependencies like authentication, database sessions, and other shared resources.
 - **Use Pydantic Models**: Define request and response models using Pydantic for data validation and serialization.
-- **Implement CRUD Operations**: Each router should implement Create, Read, Update, and Delete operations as specified in the OpenAPI contract.
+- **Implement CRUD Operations**:
+  - Each router should implement Create, Read, Update, and Delete operations as specified in the OpenAPI contract.
+  - Ensure that if no records are found for a query, an empty list is returned instead of `null` or error along with status code 404.
 - **Database Interactions**: Use SQLAlchemy for database interactions. Define models in `models.py` and use Alembic for migrations.
 - **CORS**: Configure CORS via FastAPI middleware to allow cross-origin requests. Settings should be overridable in each environment by environment vars managed in .env

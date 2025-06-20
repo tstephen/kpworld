@@ -11,6 +11,8 @@ from slugify import slugify
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
+from kpworld.dt_utils import _as_zulu
+
 from ..auth import get_current_user
 from ..database import get_db
 from ..db_models import Article as DBArticle, Tag as DBTag, User as DBUser
@@ -47,8 +49,8 @@ def _create_article_response(db_article: DBArticle, current_user: DBUser = None)
         description=db_article.description,
         body=db_article.body,
         tagList=[tag.name for tag in db_article.tags],
-        createdAt=db_article.created_at,
-        updatedAt=db_article.updated_at,
+        createdAt=_as_zulu(db_article.created_at),
+        updatedAt=_as_zulu(db_article.updated_at),
         favorited=current_user is not None and db_article in current_user.favorites,
         favoritesCount=len(db_article.favorited_by),
         author=Profile(

@@ -36,8 +36,12 @@ Real World is a sample blogging application with contract between front and back
 1. Run Real World tests to verify API compliance
 
    ```sh
-   cd api && APIURL=http://localhost:8000/api ./run-api-tests.sh | tee -a results.log
+   cd api
+   APIURL=http://localhost:8000/api ./run-api-tests.sh | tee -a results.log
    ```
+
+   Note that this test rejects createdAt and updatedAt as being invalid ISO 8601 datetimes.
+   An example date produced is `2025-06-20T08:43:59Z`, which _is_ valid.
 
 1. If you want to connect to the database directly
 

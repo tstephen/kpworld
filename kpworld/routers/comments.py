@@ -9,6 +9,8 @@ from typing import Union
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
+from kpworld.dt_utils import _as_zulu
+
 from ..auth import get_current_user
 from ..database import get_db
 from ..db_models import Article as DBArticle, Comment as DBComment, User as DBUser
@@ -31,8 +33,8 @@ router = APIRouter(tags=["Comments"])
 def _create_comment_response(db_comment: DBComment, current_user: DBUser = None) -> Comment:
     return Comment(
         id=db_comment.id,
-        createdAt=db_comment.created_at,
-        updatedAt=db_comment.updated_at,
+        createdAt=_as_zulu(db_comment.created_at),
+        updatedAt=_as_zulu(db_comment.updated_at),
         body=db_comment.body,
         author=Profile(
             username=db_comment.author.username,

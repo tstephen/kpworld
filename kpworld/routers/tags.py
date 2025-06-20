@@ -4,11 +4,17 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+import logging
 
 from ..dependencies import *
+from ..database import get_db
+from ..db_models import Tag as DBTag
+from ..models import TagsGetResponse, GenericErrorModel
 
 router = APIRouter(tags=['Tags'])
+logger = logging.getLogger(__name__)
 
 
 @router.get(
@@ -17,8 +23,12 @@ router = APIRouter(tags=['Tags'])
     responses={'422': {'model': GenericErrorModel}},
     tags=['Tags'],
 )
-def get_tags() -> Union[TagsGetResponse, GenericErrorModel]:
+def get_tags(db: Session = Depends(get_db)) -> Union[TagsGetResponse, GenericErrorModel]:
     """
     Get tags
     """
-    pass
+    logger.info("Fetching all tags")
+    tags = db.query(DBTag).order_by(DBTag.name).all()
+    tag_names = [tag.name for tag in tags]
+    logger.info("Found %d tags", len(tag_names))
+    return TagsGetResponse(tags=tag_names)

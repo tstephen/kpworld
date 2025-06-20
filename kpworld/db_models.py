@@ -1,6 +1,6 @@
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from .database import Base
 
 # Association tables for many-to-many relationships
@@ -47,8 +47,8 @@ class Article(Base):
     title = Column(String)
     description = Column(String)
     body = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     author_id = Column(Integer, ForeignKey("users.id"))
     author = relationship("User", back_populates="articles")
@@ -61,8 +61,8 @@ class Comment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     body = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     author_id = Column(Integer, ForeignKey("users.id"))
     article_id = Column(Integer, ForeignKey("articles.id"))

@@ -2,7 +2,7 @@
 
 ## Phase 1: About 1h
 
-1. please implement the docs/openapi.yaml contract using the instructions provided
+1. please implement the api/openapi.yaml contract using the instructions provided
 
   - did nothing but highlight what I had done (generated stubs with pass)
 

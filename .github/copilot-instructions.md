@@ -71,7 +71,7 @@ kpworld
   - a single logger should be declared at the top of each module, e.g. `logger = logging.getLogger(__name__)`.
   - logger use should never us f-strings but instead use the logger's built-in formatting capabilities, e.g. `logger.info("User %s created", user.username)`.
 
-- **Follow OpenAPI Specification**: Ensure all endpoints, request/response models, and error handling conform to the OpenAPI contract defined in `docs/openapi.yaml`.
+- **Follow OpenAPI Specification**: Ensure all endpoints, request/response models, and error handling conform to the OpenAPI contract defined in `api/openapi.yaml`.
   - **Use Dependency Injection**: Use FastAPI's dependency injection system to manage dependencies like authentication, database sessions, and other shared resources.
   - **Tags**: Use tags in the OpenAPI contract to group related endpoints together. Each router should correspond to a tag in the OpenAPI specification. Do not remove tags when performing edits.
 - **Use Pydantic Models**: Define request and response models using Pydantic for data validation and serialization.

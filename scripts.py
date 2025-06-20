@@ -8,7 +8,7 @@ def generate():
     result = subprocess.run(
         [
             sys.executable, "-m", "fastapi_code_generator",
-            "--input", "docs/openapi.yaml",
+            "--input", "api/openapi.yaml",
             "--output", "kpworld",
             "--generate-routers"
         ],

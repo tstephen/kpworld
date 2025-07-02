@@ -1,7 +1,15 @@
 import { useState } from 'react'
+import useSWR from 'swr'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+
+const API_URL = 'http://localhost:8000/api/articles?limit=20';
+const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZW1vQGRlbW8uY29tIiwiZXhwIjoxNzUxNDUzODYyfQ.4o6iPC_sJ8VXy8titbmlRoM9iCToO5Rvq7IhjA81Q5o';
+
+const fetcher = (url) => fetch(url, {
+  headers: { 'Authorization': `Token ${AUTH_TOKEN}` }
+}).then(res => res.json());
 
 function Nav() {
   return (
@@ -90,65 +98,7 @@ function Home() {
                 </li>
               </ul>
             </div>
-            <div className="article-preview">
-              <div className="article-meta">
-                <a href="/profile/eric-simons">
-                  <img src="http://i.imgur.com/Qr71crq.jpg" />
-                </a>
-                <div className="info">
-                  <a href="/profile/eric-simons" className="author">
-                    Eric Simons
-                  </a>
-                  <span className="date">January 20th</span>
-                </div>
-                <button className="btn btn-outline-primary btn-sm pull-xs-right">
-                  <i className="ion-heart" /> 29
-                </button>
-              </div>
-              <a
-                href="/article/how-to-build-webapps-that-scale"
-                className="preview-link"
-              >
-                <h1>How to build webapps that scale</h1>
-                <p>This is the description for the post.</p>
-                <span>Read more...</span>
-                <ul className="tag-list">
-                  <li className="tag-default tag-pill tag-outline">realworld</li>
-                  <li className="tag-default tag-pill tag-outline">
-                    implementations
-                  </li>
-                </ul>
-              </a>
-            </div>
-            <div className="article-preview">
-              <div className="article-meta">
-                <a href="/profile/albert-pai">
-                  <img src="http://i.imgur.com/N4VcUeJ.jpg" />
-                </a>
-                <div className="info">
-                  <a href="/profile/albert-pai" className="author">
-                    Albert Pai
-                  </a>
-                  <span className="date">January 20th</span>
-                </div>
-                <button className="btn btn-outline-primary btn-sm pull-xs-right">
-                  <i className="ion-heart" /> 32
-                </button>
-              </div>
-              <a href="/article/the-song-you" className="preview-link">
-                <h1>
-                  The song you won't ever stop singing. No matter how hard you try.
-                </h1>
-                <p>This is the description for the post.</p>
-                <span>Read more...</span>
-                <ul className="tag-list">
-                  <li className="tag-default tag-pill tag-outline">realworld</li>
-                  <li className="tag-default tag-pill tag-outline">
-                    implementations
-                  </li>
-                </ul>
-              </a>
-            </div>
+            <ArticlesList />
             <ul className="pagination">
               <li className="page-item active">
                 <a className="page-link" href="">
@@ -201,6 +151,46 @@ function Sidebar() {
         </div>
       </div>
   )
+}
+function ArticlesList() {
+  const { data, error, isLoading } = useSWR(API_URL, fetcher);
+
+  if (isLoading) return <div>Loading articles...</div>;
+  if (error) return <div>Error loading articles.</div>;
+  if (!data || !data.articles) return <div>No articles found.</div>;
+
+  return (
+    <div>
+      {data.articles.map(article => (
+        <div className="article-preview" key={article.slug}>
+          <div className="article-meta">
+            <a href={`/profile/${article.author.username}`}>
+              <img src={article.author.image} alt={article.author.username} />
+            </a>
+            <div className="info">
+              <a href={`/profile/${article.author.username}`} className="author">
+                {article.author.username}
+              </a>
+              <span className="date">{new Date(article.createdAt).toLocaleDateString()}</span>
+            </div>
+            <button className="btn btn-outline-primary btn-sm pull-xs-right">
+              <i className="ion-heart" /> {article.favoritesCount}
+            </button>
+          </div>
+          <a href={`/article/${article.slug}`} className="preview-link">
+            <h1>{article.title}</h1>
+            <p>{article.description}</p>
+            <span>Read more...</span>
+            <ul className="tag-list">
+              {article.tagList.map(tag => (
+                <li className="tag-default tag-pill tag-outline" key={tag}>{tag}</li>
+              ))}
+            </ul>
+          </a>
+        </div>
+      ))}
+    </div>
+  );
 }
 function App() {
   const [count, setCount] = useState(0)

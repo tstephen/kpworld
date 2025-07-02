@@ -26,6 +26,12 @@ function Nav() {
               Home
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/login">Sign in</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/register">Sign up</a>
+          </li>
           <li className="nav-item">
             <a className="nav-link" href="/editor">
               {" "}

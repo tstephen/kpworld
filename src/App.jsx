@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import useSWR from 'swr'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 
 const API_URL = 'http://localhost:8000/api/articles?limit=20';
-const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZW1vQGRlbW8uY29tIiwiZXhwIjoxNzUxNDUzODYyfQ.4o6iPC_sJ8VXy8titbmlRoM9iCToO5Rvq7IhjA81Q5o';
+
+const getAuthToken = () => localStorage.getItem('jwt');
 
 const fetcher = (url) => fetch(url, {
-  headers: { 'Authorization': `Token ${AUTH_TOKEN}` }
+  headers: { 'Authorization': `Token ${getAuthToken()}` }
 }).then(res => res.json());
 
 function Nav() {
@@ -200,6 +201,40 @@ function ArticlesList() {
   );
 }
 function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      const res = await fetch('http://localhost:8000/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user: {
+            email,
+            password,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.errors ? Object.values(data.errors).flat().join(', ') : 'Login failed');
+      } else {
+        // Save token and redirect
+        if (data.user && data.user.token) {
+          localStorage.setItem('jwt', data.user.token);
+        }
+        navigate('/');
+      }
+    } catch (err) {
+      setError('Network error');
+    }
+  };
   return (
     <div className="auth-page">
       <div className="container page">
@@ -209,15 +244,19 @@ function Login() {
             <p className="text-xs-center">
               <a href="/register">Need an account?</a>
             </p>
-            <ul className="error-messages">
-              <li>That email is already taken</li>
-            </ul>
-            <form>
+            {error && (
+              <ul className="error-messages">
+                <li>{error}</li>
+              </ul>
+            )}
+            <form onSubmit={handleSubmit}>
               <fieldset className="form-group">
                 <input
                   className="form-control form-control-lg"
                   type="text"
                   placeholder="Email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                 />
               </fieldset>
               <fieldset className="form-group">
@@ -225,9 +264,11 @@ function Login() {
                   className="form-control form-control-lg"
                   type="password"
                   placeholder="Password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
                 />
               </fieldset>
-              <button className="btn btn-lg btn-primary pull-xs-right">
+              <button className="btn btn-lg btn-primary pull-xs-right" type="submit">
                 Sign in
               </button>
             </form>
